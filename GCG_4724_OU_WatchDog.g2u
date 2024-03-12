@@ -1,0 +1,176 @@
+Program.Sub.ScreenSU.Start
+Gui.Form..Create
+Gui.Form..Caption("Order Upload WatchDog")
+Gui.Form..Size(4770,1800)
+Gui.Form..MinX(0)
+Gui.Form..MinY(0)
+Gui.Form..Position(0,0)
+Gui.Form..BackColor(-2147483633)
+Gui.Form..MousePointer(0)
+Gui.Form..Event(UnLoad,Form_UnLoad)
+Gui.Form.cmdStart.Create(Button)
+Gui.Form.cmdStart.Size(1470,375)
+Gui.Form.cmdStart.Position(270,720)
+Gui.Form.cmdStart.Caption("Start")
+Gui.Form.cmdStart.Event(Click,cmdStart_Click)
+Gui.Form.cmdStop.Create(Button)
+Gui.Form.cmdStop.Size(1470,375)
+Gui.Form.cmdStop.Position(2040,720)
+Gui.Form.cmdStop.Caption("Stop")
+Gui.Form.cmdStop.Event(Click,cmdStop_Click)
+Gui.Form.lblStatus.Create(Label,"Click Start.  To start uploading Orders",True,5355,255,0,270,375,True,0,"Arial",8,-2147483633,0)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.sSql.Declare(String)
+
+F.ODBC.Connection!Con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+'program it run on pre online update hook 38120 
+'a screen will show up to either start uploading unattended time from factory wiz or to stop uploading time.
+'a stop file will get created that will stop gcg_4482_Labor_Upload
+
+F.Intrinsic.Control.CallSub(IsRunning)
+
+Gui.Form.cmdStop.Enabled(False)
+
+Gui.Form..Show
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		Function.Intrinsic.String.Concat("Project: GCG_4724_OU_ORDUPL.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(Form_Unload)
+Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.Form_UnLoad.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.sFile.Declare(String)
+V.Local.bRet.Declare(Boolean,False)
+
+f.Intrinsic.String.Build("{0}\4724_{1}.pid",v.Caller.FilesDir,V.Caller.CompanyCode,v.Local.sFile)
+F.Intrinsic.File.Exists(V.Local.sFile,V.Local.bRet)
+
+F.Intrinsic.Control.If(V.Local.bRet,=,True)
+	F.Intrinsic.File.DeleteFile(V.Local.sFile)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.CallSub(cmdStop_Click)
+
+F.ODBC.Connection!Con.Close
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		Function.Intrinsic.String.Concat("Project: GCG_4724_OU_ORDUPL.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.Form_UnLoad.End
+
+Program.Sub.cmdStart_Click.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.sFile.Declare(String)
+V.Local.bRet.Declare(Boolean,False)
+V.Local.sGab.Declare(String)
+V.Local.iRet.Declare(String)
+
+
+F.Intrinsic.String.Build("{0}\4724_{1}.stop",V.Caller.FilesDir,V.Caller.CompanyCode,V.Local.sFile)
+F.Intrinsic.File.Exists(V.Local.sFile,v.Local.bRet)
+
+F.Intrinsic.Control.If(V.Local.bRet,=,True)
+	F.Intrinsic.File.DeleteFile(V.Local.sFile)
+F.Intrinsic.Control.EndIf
+
+Gui.Form.lblStatus.Text("Click Stop. To Stop the Order Upload program...")
+
+Gui.Form.cmdStart.Enabled(False)
+Gui.Form.cmdStop.Enabled(True)
+
+F.Intrinsic.String.Build("{0}\GAB\GAS\GCG_4724_OU_ORDUPL.g2u",V.Caller.PluginsDir,V.Local.sGab)
+
+F.Global.Task.CallAsyncGas(V.Local.sGab,"",2,V.Local.iRet)
+
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		Function.Intrinsic.String.Concat("Project: GCG_4724_OU_ORDUPL.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdStart_Click.End
+
+Program.Sub.cmdStop_Click.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.sFile.Declare(String)
+V.Local.bRet.Declare(Boolean,False)
+
+Gui.Form.lblStatus.Text("Click Start.  To Start Uploading Orders......")
+
+F.Intrinsic.String.Build("{0}\4724_{1}.stop",V.Caller.FilesDir,V.Caller.CompanyCode,V.Local.sFile)
+F.Intrinsic.File.Exists(V.Local.sFile,v.Local.bRet)
+
+F.Intrinsic.Control.If(V.Local.bRet,=,False)
+	F.Intrinsic.File.String2File(V.Local.sFile,"Albert Einstein: the more I know, the more I realize what I don't know.  Please don't delete this")
+F.Intrinsic.Control.EndIf
+
+Gui.Form.cmdStart.Enabled(True)
+Gui.Form.cmdStop.Enabled(False)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		Function.Intrinsic.String.Concat("Project: GCG_4724_OU_ORDUPL.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdStop_Click.End
+
+Program.Sub.IsRunning.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+v.Local.sFile.Declare(string)
+v.Local.i.Declare(Long)
+v.Local.bCheck.Declare(Boolean)
+v.Local.sText.Declare(String)
+
+'we run the program async so it will not hold up online update - we check the PID and if it is stil running, we end the current program.
+f.Intrinsic.String.Build("{0}\4724_{1}.pid",v.Caller.FilesDir,V.Caller.CompanyCode,v.Local.sFile)
+f.Intrinsic.File.Exists(v.Local.sFile,v.Local.bCheck)
+f.Intrinsic.Control.If(v.Local.bCheck,=,True)
+	f.Intrinsic.File.File2String(v.local.sFile,v.Local.sText)
+	f.Intrinsic.Task.PIDRunning(v.Local.sText.Long,v.Local.bCheck)
+	f.Intrinsic.Control.If(v.Local.bCheck,=,True)
+		'end program
+		F.Intrinsic.Control.End
+
+	f.Intrinsic.Control.Else
+		'create file with current PID and continue running
+		f.Intrinsic.File.String2File(v.Local.sFile,v.Ambient.PID)	
+	f.Intrinsic.Control.EndIf
+f.Intrinsic.Control.Else
+	'create file with current PID and continue running
+	f.Intrinsic.File.String2File(v.Local.sFile,v.Ambient.PID)
+f.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		Function.Intrinsic.String.Concat("Project: GCG_4724_OU_ORDUPL.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.IsRunning.End
