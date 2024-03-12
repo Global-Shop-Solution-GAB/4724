@@ -1,0 +1,120 @@
+Program.Sub.Preflight.Start
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sFile.Declare(String)
+v.Local.bExists.Declare(Boolean)
+
+
+F.Intrinsic.UI.Sleep(5)
+
+'Function.Intrinsic.Control.CallSub(isrunning)
+F.Intrinsic.String.Build("{0}\4724_{1}.stop",V.Caller.FilesDir,V.Caller.CompanyCode,V.Local.sFile)
+f.Intrinsic.File.Exists(v.Local.sFile,v.Local.bExists)
+f.Intrinsic.Control.If(v.Local.bExists,=,True)
+	f.Intrinsic.Control.End
+f.Intrinsic.Control.EndIf
+
+F.Global.General.CallWrapperSync(50,"ORDUPL")
+
+Function.Intrinsic.Control.CallSub(exit)
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4724_OU_ORDUPL.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Main.End
+
+Program.Sub.isRunning.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+v.Local.sFile.Declare(string)
+v.Local.i.Declare(Long)
+v.Local.bCheck.Declare(Boolean)
+v.Local.sText.Declare(String)
+
+'check to see if PID tracking file exists first.
+f.Intrinsic.String.Build("{0}\4724.pid",v.Caller.FilesDir,v.Local.sFile)
+'f.Intrinsic.File.Exists(v.Local.sFile,v.Local.bCheck)
+'f.Intrinsic.Control.If(v.Local.bCheck,=,True)
+'	'open file that contains the current PID that was last written
+'	f.Intrinsic.File.File2String(v.local.sFile,v.Local.sText)
+'	'PID is within file so just use sText
+'	f.Intrinsic.Task.PIDRunning(v.Local.sText.Long,v.Local.bCheck)
+'	f.Intrinsic.Control.If(v.Local.bCheck,=,True)
+'		f.Intrinsic.Control.End
+'	f.Intrinsic.Control.EndIf
+'f.Intrinsic.Control.EndIf
+
+'we run the program async so it will not hold up online update - we check the PID and if it is stil running, we end the current program.
+f.Intrinsic.File.Exists(v.Local.sFile,v.Local.bCheck)
+f.Intrinsic.Control.If(v.Local.bCheck,=,True)
+	f.Intrinsic.File.IsFileLocked(v.Local.sFile,v.Local.bCheck)
+	f.Intrinsic.Control.If(v.Local.bCheck,=,False)
+		f.Intrinsic.File.File2String(v.local.sFile,v.Local.sText)
+		f.Intrinsic.Task.PIDRunning(v.Local.sText.Long,v.Local.bCheck)
+		f.Intrinsic.Control.If(v.Local.bCheck,=,True)
+			'end program
+			F.Intrinsic.Control.End
+		f.Intrinsic.Control.Else
+			'create file with current PID and continue running
+			f.Intrinsic.File.String2File(v.Local.sFile,v.Ambient.PID)	
+		f.Intrinsic.Control.EndIf
+	f.Intrinsic.Control.Else
+		f.Intrinsic.Control.CallSub(exit)	
+	f.Intrinsic.Control.EndIf	
+f.Intrinsic.Control.Else
+	'create file with current PID and continue running
+	f.Intrinsic.File.String2File(v.Local.sFile,v.Ambient.PID)
+f.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: GCG_4724_OU_ORDUPL.G2U{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		''F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(Exit)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+
+Program.Sub.isRunning.End
+
+Program.Sub.exit.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.sGab.Declare(String)
+V.Local.iRet.Declare(Long)
+
+'F.Intrinsic.String.Build("{0}\GAB\GAS\GCG_4724_OU_ORDUPL.g2u",V.Caller.PluginsDir,V.Local.sGab)
+f.Intrinsic.String.Build("{0}\{1}",v.Caller.GasDir,"GCG_4724_OU_ORDUPL.g2u",v.Local.sGab)
+
+'F.ODBC.Connection!Con.Close
+
+F.Global.Task.CallAsyncGas(V.Local.sGab,"",2,V.Local.iRet)
+
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: GCG_4724_OU_ORDUPL.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		''F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(Exit)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.exit.End
+
+Program.Sub.Comments.Start
+${$0$}$GCG_4724_OU_ORDUPL$}$DLF$}$10/9/2017 10:31:10 AM$}$False
+Program.Sub.Comments.End
